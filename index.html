@@ -345,9 +345,8 @@ function renderDays(){
 function bldTable(cases){
   const h=`<tr>
     <th>#</th><th>FIR No.</th><th>Police Station</th>
-    <th>FIR Date</th><th>60-Day Deadline</th>
-    <th>Compliance Status</th><th>IIF5 Filed On</th>
-    <th>IIF5 Type</th><th>IO Name</th><th>Act &amp; Section</th>
+    <th>Status</th><th>FIR Date</th><th>60-Day Deadline</th>
+    <th>IIF5 Filed On</th>
   </tr>`;
   const rows=cases.map((r,i)=>{
     const pill={
@@ -360,13 +359,10 @@ function bldTable(cases){
       <td class="rn">${i+1}</td>
       <td><span class="fno">${e(r.fir_no)}</span></td>
       <td><span class="ps-tag">${e(r.ps_name)}</span></td>
+      <td>${pill}</td>
       <td class="rn">${e(r.fir_date)}</td>
       <td><strong>${e(r.deadline)}</strong></td>
-      <td>${pill}</td>
       <td class="rn">${r.iif5_date?e(r.iif5_date):'<span class="muted">Not filed</span>'}</td>
-      <td>${r.iif5_type?e(r.iif5_type):'<span class="muted">—</span>'}</td>
-      <td><span class="trunc" title="${e(r.io_name)}">${e(r.io_name)||'—'}</span></td>
-      <td><span class="trunc" title="${e(r.act_section)}">${e(r.act_section)||'—'}</span></td>
     </tr>`;
   }).join('');
   return `<table><thead>${h}</thead><tbody>${rows}</tbody></table>`;
