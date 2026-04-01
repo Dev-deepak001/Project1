@@ -33,7 +33,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 
 /* OVERALL STATS */
 .ov-stats{display:grid;grid-template-columns:repeat(5,1fr);gap:.75rem;margin-bottom:1.25rem}
-@media(max-width:760px){.ov-stats{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:760px){.ov-stats{display:none}.legend{display:none}}
 .ov-card{background:var(--surface);border:1px solid var(--border);border-radius:.875rem;padding:1.1rem 1rem 1rem;box-shadow:var(--sh1);position:relative;overflow:hidden;cursor:pointer;transition:box-shadow .18s,transform .18s}
 .ov-card:hover{box-shadow:var(--sh2);transform:translateY(-1px)}
 .ov-card.af{outline:3px solid var(--primary);outline-offset:1px}
@@ -157,8 +157,8 @@ tbody tr:hover td{background:var(--gray-lt)}
   <div class="hdr-brand">
     <span class="hdr-ico">&#9878;</span>
     <div class="hdr-title">
-      <h1>60-Day FIR Compliance Calendar</h1>
-      <p>District: Shri Muktsar Sahib &nbsp;&bull;&nbsp; Tracks 60-day IIF5 filing deadlines per FIR</p>
+      <h1>BNS Cases Compliance Calendar</h1>
+      <p>CCTNS Branch Shri Muktsar Sahib</p>
     </div>
   </div>
   <div class="hdr-meta">Data: 01 Jul 2024 &ndash; 01 Apr 2026<br>Total FIRs: 1,588</div>
@@ -186,21 +186,11 @@ tbody tr:hover td{background:var(--gray-lt)}
     <div style="text-align:center">
       <h2 id="mT"></h2><small id="mS"></small>
     </div>
-    <div style="display:flex;gap:.5rem;align-items:center">
-      <button class="todaybtn" onclick="goToday()">&#9679; Today</button>
-      <button class="nbtn" onclick="chM(1)">Next &#8594;</button>
-    </div>
+    <button class="nbtn" onclick="chM(1)">Next &#8594;</button>
   </div>
 
   <div class="mstats" id="mStats"></div>
 
-  <div class="legend">
-    <strong style="color:var(--text);margin-right:.25rem">Legend:</strong>
-    <span class="leg-it"><span class="leg-dot" style="background:var(--green)"></span>Compliant (filed &le;60 days)</span>
-    <span class="leg-it"><span class="leg-dot" style="background:var(--orange)"></span>Late Filing (filed &gt;60 days)</span>
-    <span class="leg-it"><span class="leg-dot" style="background:var(--red)"></span>Overdue (IIF5 not filed, deadline passed)</span>
-    <span class="leg-it"><span class="leg-dot" style="background:var(--blue)"></span>Pending (still within 60-day window)</span>
-  </div>
 
   <div class="cal-days" id="calDays"></div>
 </div>
