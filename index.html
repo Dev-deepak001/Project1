@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Case Deadline Calendar</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --primary:       #2563eb;
+            --primary-dark:  #1d4ed8;
+            --primary-light: #dbeafe;
+            --success:       #16a34a;
+            --success-light: #dcfce7;
+            --warning:       #d97706;
+            --warning-light: #fef3c7;
+            --danger:        #dc2626;
+            --danger-light:  #fee2e2;
+            --purple:        #7c3aed;
+            --purple-light:  #ede9fe;
+            --bg:            #f1f5f9;
+            --surface:       #ffffff;
+            --surface2:      #f8fafc;
+            --border:        #e2e8f0;
+            --text:          #0f172a;
+            --text-secondary:#475569;
+            --text-muted:    #94a3b8;
+            --radius:        0.75rem;
+            --shadow-sm:     0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+            --shadow:        0 4px 12px rgba(0,0,0,.08);
+            --shadow-lg:     0 20px 40px rgba(0,0,0,.15);
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            font-size: 14px;
+        }
+
+        /* ── HEADER ── */
+        .header {
+            background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 60%, #3b82f6 100%);
+            color: #fff;
+            padding: 0 2rem;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 4px 20px rgba(37,99,235,.35);
+            position: sticky;
+            top: 0;
+            z-index: 200;
+        }
+
+        .header-brand {
+            display: flex;
+            align-items: center;
+            gap: .625rem;
+            font-size: 1.25rem;
+            font-weight: 800;
+            letter-spacing: -.3px;
+        }
+
+        .header-brand .icon {
+            font-size: 1.5rem;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: .75rem;
+        }
+
+        .file-chip {
+            display: flex;
+            align-items: center;
+            gap: .375rem;
+            background: rgba(255,255,255,.15);
+            border: 1px solid rgba(255,255,255,.25);
+            border-radius: 9999px;
+            padding: .3rem .875rem;
+            font-size: .75rem;
+            font-weight: 600;
+            backdrop-filter: blur(6px);
+        }
+
+        /* ── BUTTONS ── */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: .4rem;
+            padding: .5rem 1.125rem;
+            border-radius: .5rem;
+            font-weight: 700;
+            font-size: .8125rem;
+            cursor: pointer;
+            border: none;
+            transition: all .18s ease;
+            line-height: 1;
+            white-space: nowrap;
+        }
+        .btn:active { transform: scale(.97); }
+
+        .btn-primary   { background: var(--primary); color: #fff; }
+        .btn-primary:hover { background: var(--primary-dark); box-shadow: 0 4px 14px rgba(37,99,235,.4); transform: translateY(-1px); }
+
+        .btn-white  { background: #fff; color: var(--primary); border: 1px solid rgba(255,255,255,.3); }
+        .btn-white:hover { background: rgba(255,255,255,.9); }
+
+        .btn-ghost  { background: transparent; color: var(--text-secondary); border: 1px solid var(--border); }
+        .btn-ghost:hover { background: var(--surface2); }
+
+        .btn-danger { background: var(--danger); color: #fff; }
+        .btn-danger:hover { background: #b91c1c; }
+
+        /* ── UPLOAD SECTION ── */
+        #uploadSection {
+            max-width: 680px;
+            margin: 3rem auto;
+            padding: 0 1.25rem;
+        }
+
+        .upload-card {
+            background: var(--surface);
+            border: 2.5px dashed var(--border);
+            border-radius: 1.25rem;
+            padding: 3.5rem 2.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all .25s ease;
+        }
+        .upload-card:hover, .upload-card.dragover {
+            border-color: var(--primary);
+            background: #eff6ff;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+        .upload-card .upload-icon { font-size: 3.5rem; margin-bottom: 1rem; }
+        .upload-card h2 { font-size: 1.25rem; font-weight: 800; margin-bottom: .5rem; }
+        .upload-card p  { color: var(--text-secondary); font-size: .875rem; line-height: 1.6; margin-bottom: 1.75rem; }
+
+        .format-hint {
+            margin-top: 1.5rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            padding: 1.25rem 1.5rem;
+            box-shadow: var(--shadow-sm);
+        }
+        .format-hint h3 { font-size: .9rem; font-weight: 700; margin-bottom: .625rem; }
+        .format-hint p  { color: var(--text-secondary); font-size: .8125rem; line-height: 1.7; }
+        .format-hint strong { color: var(--primary); }
+
+        /* ── CALENDAR WRAPPER ── */
+        #calendarContainer {
+            max-width: 1120px;
+            margin: 1.5rem auto;
+            padding: 0 1.25rem 3rem;
+        }
+
+        /* ── STATS BAR ── */
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: .75rem;
+            margin-bottom: 1rem;
+        }
+        @media (max-width: 700px) { .stats-bar { grid-template-columns: repeat(2, 1fr); } }
+
+        .stat-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1rem 1.25rem;
+            box-shadow: var(--shadow-sm);
+            position: relative;
+            overflow: hidden;
+        }
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+        }
+        .stat-card.c-total::before   { background: var(--primary); }
+        .stat-card.c-overdue::before { background: var(--danger); }
+        .stat-card.c-today::before   { background: var(--warning); }
+        .stat-card.c-soon::before    { background: var(--purple); }
+        .stat-card.c-done::before    { background: var(--success); }
+
+        .stat-value { font-size: 1.875rem; font-weight: 900; line-height: 1; }
+        .stat-label { font-size: .7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .07em; margin-top: .3rem; font-weight: 600; }
+
+        .stat-card.c-total   .stat-value { color: var(--primary); }
+        .stat-card.c-overdue .stat-value { color: var(--danger); }
+        .stat-card.c-today   .stat-value { color: var(--warning); }
+        .stat-card.c-soon    .stat-value { color: var(--purple); }
+        .stat-card.c-done    .stat-value { color: var(--success); }
+
+        /* ── MONTH NAV ── */
+        .month-nav {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: .875rem 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: .875rem;
+            box-shadow: var(--shadow-sm);
+        }
+        .month-nav h2 { font-size: 1.375rem; font-weight: 800; }
+        .month-nav small { font-size: .75rem; color: var(--text-muted); }
+
+        .nav-btn {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: .5rem;
+            padding: .45rem .9rem;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: .85rem;
+            color: var(--text);
+            transition: all .18s;
+        }
+        .nav-btn:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+        .today-pill {
+            background: var(--warning-light);
+            color: var(--warning);
+            border: 1px solid #fcd34d;
+            border-radius: .5rem;
+            padding: .45rem .9rem;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: .8125rem;
+            transition: all .18s;
+        }
+        .today-pill:hover { background: var(--warning); color: #fff; border-color: var(--warning); }
+
+        /* ── TOOLBAR ── */
+        .toolbar {
+            display: flex;
+            gap: .625rem;
+            margin-bottom: .875rem;
+            flex-wrap: wrap;
+        }
+        .search-input, .filter-select {
+            padding: .55rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: .5rem;
+            font-size: .8125rem;
+            background: var(--surface);
+            color: var(--text);
+            transition: all .18s;
+        }
+        .search-input { flex: 1; min-width: 200px; }
+        .filter-select { min-width: 160px; }
+        .search-input:focus, .filter-select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37,99,235,.12);
+        }
+
+        /* ── LEGEND ── */
+        .legend {
+            display: flex;
+            align-items: center;
+            gap: 1.125rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: .625rem 1.25rem;
+            margin-bottom: .875rem;
+            font-size: .75rem;
+            flex-wrap: wrap;
+            box-shadow: var(--shadow-sm);
+        }
+        .legend-title { font-weight: 700; color: var(--text); }
+        .legend-item { display: flex; align-items: center; gap: .375rem; color: var(--text-secondary); }
+        .legend-swatch { width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; }
+
+        /* ── DAY ROWS ── */
+        .calendar-days { display: flex; flex-direction: column; gap: .5rem; }
+
+        .day-row {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            transition: box-shadow .2s;
+        }
+        .day-row:hover { box-shadow: var(--shadow); }
+
+        /* Left accent bar */
+        .day-row                    { border-left: 4px solid transparent; }
+        .day-row.type-empty         { border-left-color: var(--border); opacity: .75; }
+        .day-row.type-overdue       { border-left-color: var(--danger); background: #fff9f9; }
+        .day-row.type-today         { border-left-color: var(--warning); background: #fffdf5; }
+        .day-row.type-cases         { border-left-color: var(--primary); }
+        .day-row.type-weekend-empty { border-left-color: var(--purple-light); opacity: .7; }
+
+        .day-header {
+            display: flex;
+            align-items: center;
+            padding: .8rem 1.25rem;
+            gap: .875rem;
+            user-select: none;
+        }
+        .day-row.has-cases .day-header { cursor: pointer; }
+
+        .day-circle {
+            width: 2.4rem;
+            height: 2.4rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: .9375rem;
+            flex-shrink: 0;
+        }
+        .day-row.type-today   .day-circle { background: var(--warning); color: #fff; }
+        .day-row.type-overdue .day-circle { background: var(--danger); color: #fff; }
+        .day-row.type-cases   .day-circle { background: var(--primary-light); color: var(--primary); }
+        .day-circle.default               { background: var(--surface2); color: var(--text-secondary); }
+
+        .day-meta { flex: 1; min-width: 0; }
+        .day-name {
+            font-weight: 700;
+            font-size: .875rem;
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+        }
+        .today-tag {
+            font-size: .6rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            background: var(--warning);
+            color: #fff;
+            padding: .1rem .45rem;
+            border-radius: 9999px;
+        }
+        .weekend-tag {
+            font-size: .6rem;
+            font-weight: 700;
+            color: var(--purple);
+            background: var(--purple-light);
+            padding: .1rem .45rem;
+            border-radius: 9999px;
+        }
+        .day-date-text { font-size: .7rem; color: var(--text-muted); margin-top: .1rem; }
+
+        .day-badges { display: flex; gap: .4rem; flex-wrap: wrap; align-items: center; margin-left: auto; }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: .2rem .6rem;
+            border-radius: 9999px;
+            font-size: .68rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            white-space: nowrap;
+        }
+        .badge-blue   { background: var(--primary-light); color: var(--primary); }
+        .badge-red    { background: var(--danger-light); color: var(--danger); }
+        .badge-orange { background: var(--warning-light); color: var(--warning); }
+        .badge-green  { background: var(--success-light); color: var(--success); }
+        .badge-purple { background: var(--purple-light); color: var(--purple); }
+
+        .expand-chevron {
+            color: var(--text-muted);
+            font-size: .875rem;
+            transition: transform .28s ease;
+            flex-shrink: 0;
+            margin-left: .5rem;
+        }
+        .day-row.expanded .expand-chevron { transform: rotate(180deg); }
+
+        /* ── DAY CONTENT ── */
+        .day-content {
+            display: none;
+            border-top: 1px solid var(--border);
+            animation: slideDown .2s ease;
+        }
+        .day-row.expanded .day-content { display: block; }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-6px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── CASES TABLE ── */
+        .table-wrap { overflow-x: auto; }
+
+        .cases-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: .8125rem;
+        }
+        .cases-table thead th {
+            background: var(--surface2);
+            padding: .6rem .875rem;
+            text-align: left;
+            font-size: .7rem;
+            text-transform: uppercase;
+            letter-spacing: .07em;
+            color: var(--text-muted);
+            font-weight: 700;
+            border-bottom: 2px solid var(--border);
+            white-space: nowrap;
+        }
+        .cases-table tbody td {
+            padding: .6875rem .875rem;
+            border-bottom: 1px solid var(--border);
+            vertical-align: middle;
+            max-width: 220px;
+        }
+        .cases-table tbody tr:last-child td { border-bottom: none; }
+        .cases-table tbody tr:hover td { background: var(--surface2); }
+
+        .row-num { color: var(--text-muted); font-weight: 700; font-size: .7rem; }
+
+        .cell-truncate {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            display: block;
+        }
+
+        /* Status pill */
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            padding: .2rem .65rem;
+            border-radius: 9999px;
+            font-size: .7rem;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+        .s-pending   { background: var(--warning-light); color: var(--warning); }
+        .s-active    { background: var(--primary-light); color: var(--primary); }
+        .s-completed { background: var(--success-light); color: var(--success); }
+        .s-overdue   { background: var(--danger-light); color: var(--danger); }
+        .s-default   { background: var(--surface2); color: var(--text-secondary); }
+
+        /* Priority */
+        .priority-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: .35rem;
+            font-size: .75rem;
+            font-weight: 700;
+        }
+        .p-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .p-high   .p-dot { background: var(--danger); }
+        .p-medium .p-dot { background: var(--warning); }
+        .p-low    .p-dot { background: var(--success); }
+        .p-high   { color: var(--danger); }
+        .p-medium { color: var(--warning); }
+        .p-low    { color: var(--success); }
+
+        /* ── MAPPING MODAL ── */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15,23,42,.55);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal {
+            background: #fff;
+            border-radius: 1.25rem;
+            padding: 2rem 2rem 1.5rem;
+            max-width: 620px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow-lg);
+        }
+        .modal h2 { font-size: 1.2rem; font-weight: 800; margin-bottom: .35rem; }
+        .modal .modal-sub { color: var(--text-secondary); font-size: .8125rem; margin-bottom: 1.5rem; line-height: 1.6; }
+
+        .map-grid { display: flex; flex-direction: column; gap: .75rem; }
+
+        .map-row {
+            display: grid;
+            grid-template-columns: 1fr 1.1fr;
+            align-items: center;
+            gap: .75rem;
+            padding: .625rem .875rem;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: .625rem;
+        }
+        .map-row.required { border-color: #fca5a5; background: #fff9f9; }
+
+        .map-label { font-weight: 700; font-size: .8125rem; }
+        .map-label .req { color: var(--danger); margin-left: .2rem; }
+        .map-hint { font-size: .7rem; color: var(--text-muted); margin-top: .15rem; }
+
+        .map-select {
+            padding: .5rem .75rem;
+            border: 1px solid var(--border);
+            border-radius: .5rem;
+            font-size: .8125rem;
+            background: #fff;
+            cursor: pointer;
+            width: 100%;
+            color: var(--text);
+        }
+        .map-select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,.1); }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: .625rem;
+            margin-top: 1.5rem;
+            padding-top: 1.25rem;
+            border-top: 1px solid var(--border);
+        }
+
+        /* ── EMPTY & MISC ── */
+        .hidden { display: none !important; }
+
+        .empty-state {
+            text-align: center;
+            padding: 4.5rem 2rem;
+        }
+        .empty-state .empty-icon { font-size: 4rem; margin-bottom: 1rem; }
+        .empty-state h3 { font-size: 1.125rem; font-weight: 700; margin-bottom: .5rem; }
+        .empty-state p  { color: var(--text-secondary); font-size: .875rem; }
+
+        .no-data-row {
+            text-align: center;
+            padding: 1.5rem;
+            color: var(--text-muted);
+            font-style: italic;
+            font-size: .8rem;
+        }
+
+        /* week separator label */
+        .week-label {
+            padding: .35rem .875rem;
+            font-size: .65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .1em;
+            color: var(--text-muted);
+            background: var(--bg);
+        }
+    </style>
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<header class="header">
+    <div class="header-brand">
+        <span class="icon">📅</span>
+        Case Deadline Calendar
+    </div>
+    <div class="header-right">
+        <div id="fileChip" class="file-chip hidden"></div>
+        <label for="fileInput" class="btn btn-white" style="cursor:pointer;">
+            📂 Upload Excel
+        </label>
+        <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display:none;">
+    </div>
+</header>
+
+<!-- ===== UPLOAD SECTION ===== -->
+<div id="uploadSection">
+    <div class="upload-card" id="dropZone">
+        <div class="upload-icon">📊</div>
+        <h2>Upload Your Case Data</h2>
+        <p>Drag & drop your Excel or CSV file here, or click the button below.<br>
+           All data stays in your browser — nothing is sent to any server.</p>
+        <label for="fileInput" class="btn btn-primary" style="cursor:pointer; font-size:.9rem; padding:.65rem 1.5rem;">
+            📂 &nbsp;Choose File
+        </label>
+    </div>
+
+    <div class="format-hint">
+        <h3>📋 Expected Columns (examples)</h3>
+        <p>
+            <strong>Case ID / Case No</strong> &nbsp;·&nbsp;
+            <strong>Case Name / Title</strong> &nbsp;·&nbsp;
+            <strong>Deadline / Due Date / Next Date / Hearing Date</strong> &nbsp;·&nbsp;
+            <strong>Status</strong> &nbsp;·&nbsp;
+            <strong>Priority</strong> &nbsp;·&nbsp;
+            <strong>Assigned To</strong> &nbsp;·&nbsp;
+            <strong>Remarks / Notes</strong>
+            <br><br>
+            After upload you will be asked to confirm which column is the deadline date.
+            All other columns are optional.
+        </p>
+    </div>
+</div>
+
+<!-- ===== CALENDAR SECTION ===== -->
+<div id="calendarContainer" class="hidden">
+
+    <!-- Stats -->
+    <div class="stats-bar" id="statsBar"></div>
+
+    <!-- Month nav -->
+    <div class="month-nav">
+        <button class="nav-btn" onclick="changeMonth(-1)">&#8592; Prev</button>
+        <div style="text-align:center;">
+            <h2 id="monthTitle"></h2>
+            <small id="monthSub"></small>
+        </div>
+        <div style="display:flex;gap:.5rem;align-items:center;">
+            <button class="today-pill" onclick="goToToday()">&#9679; Today</button>
+            <button class="nav-btn" onclick="changeMonth(1)">Next &#8594;</button>
+        </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+        <input  type="text"   class="search-input"  id="searchInput"   placeholder="&#128269;  Search case ID, name, status, assigned to…" oninput="renderCalendar()">
+        <select class="filter-select" id="filterStatus" onchange="renderCalendar()">
+            <option value="">All Statuses</option>
+        </select>
+        <select class="filter-select" id="filterPriority" onchange="renderCalendar()">
+            <option value="">All Priorities</option>
+        </select>
+    </div>
+
+    <!-- Legend -->
+    <div class="legend">
+        <span class="legend-title">Legend:</span>
+        <span class="legend-item"><span class="legend-swatch" style="background:var(--danger);"></span>Overdue (not completed)</span>
+        <span class="legend-item"><span class="legend-swatch" style="background:var(--warning);"></span>Due Today</span>
+        <span class="legend-item"><span class="legend-swatch" style="background:var(--primary);"></span>Has Cases</span>
+        <span class="legend-item"><span class="legend-swatch" style="background:var(--border);"></span>No Cases</span>
+    </div>
+
+    <!-- Day rows -->
+    <div class="calendar-days" id="calendarDays"></div>
+
+</div>
+
+<!-- ===== MAPPING MODAL ===== -->
+<div id="mappingModal" class="modal-overlay hidden">
+    <div class="modal">
+        <h2>🗂️ Map Your Excel Columns</h2>
+        <p class="modal-sub">
+            Detected <strong id="detRows">0</strong> data rows and
+            <strong id="detCols">0</strong> columns.<br>
+            Select which column corresponds to each field. Only <strong>Deadline Date</strong> is required.
+        </p>
+        <div class="map-grid" id="mapGrid"></div>
+        <div class="modal-footer">
+            <button class="btn btn-ghost" onclick="closeMappingModal()">Cancel</button>
+            <button class="btn btn-primary" onclick="applyMapping()">
+                ✅ &nbsp;Apply &amp; View Calendar
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ===== SCRIPT ===== -->
+<script>
+'use strict';
+
+// ═══════════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════════
+let rawData      = [];
+let headers      = [];
+let colMap       = { deadline:'', caseId:'', caseName:'', status:'', priority:'', assignedTo:'', remarks:'' };
+let curYear      = new Date().getFullYear();
+let curMonth     = new Date().getMonth();
+let expanded     = new Set();
+let uploadedName = '';
+
+const MONTH_NAMES = ['January','February','March','April','May','June',
+                     'July','August','September','October','November','December'];
+const DAY_NAMES   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+// ═══════════════════════════════════════════════════════
+//  FILE UPLOAD
+// ═══════════════════════════════════════════════════════
+const fileInput = document.getElementById('fileInput');
+const dropZone  = document.getElementById('dropZone');
+
+fileInput.addEventListener('change', e => {
+    if (e.target.files[0]) processFile(e.target.files[0]);
+    e.target.value = '';
+});
+
+dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', ()=> { dropZone.classList.remove('dragover'); });
+dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    if (e.dataTransfer.files[0]) processFile(e.dataTransfer.files[0]);
+});
+
+function processFile(file) {
+    uploadedName = file.name;
+    const reader = new FileReader();
+    reader.onload = evt => {
+        try {
+            const wb  = XLSX.read(new Uint8Array(evt.target.result), { type:'array', cellDates:true });
+            const ws  = wb.Sheets[wb.SheetNames[0]];
+            const json = XLSX.utils.sheet_to_json(ws, { raw:false, dateNF:'yyyy-mm-dd', defval:'' });
+
+            if (!json.length) { alert('The file appears empty or has no data rows.'); return; }
+
+            rawData = json;
+            headers = Object.keys(json[0]);
+
+            document.getElementById('detRows').textContent = json.length;
+            document.getElementById('detCols').textContent = headers.length;
+
+            autoDetect();
+            showModal();
+        } catch(err) {
+            alert('Could not read file: ' + err.message);
+        }
+    };
+    reader.readAsArrayBuffer(file);
+}
+
+// ═══════════════════════════════════════════════════════
+//  AUTO-DETECT COLUMNS
+// ═══════════════════════════════════════════════════════
+function norm(s) { return s.toLowerCase().replace(/[\s_\-\/()]/g,''); }
+
+const PATTERNS = {
+    deadline:   ['deadline','duedate','nextdate','hearingdate','targetdate','enddate','date',
+                 'completiondate','scheduledate','dueon','expirydate','renewaldate'],
+    caseId:     ['caseid','caseno','casenumber','id','srno','serialno','matterno','fileno',
+                 'ticketno','refno','crf','cr','taskid','projectno'],
+    caseName:   ['casename','casetitle','title','subject','matter','description','name',
+                 'task','projectname','mattername','casedescription'],
+    status:     ['status','state','stage','progress','condition','currentstatus'],
+    priority:   ['priority','urgency','severity','importance','level','criticalness'],
+    assignedTo: ['assignedto','assignee','advocate','lawyer','handledby','officer',
+                 'owner','responsible','attorney','allocatedto','managedby'],
+    remarks:    ['remarks','notes','comment','note','observation','details','description2','remark']
+};
+
+function autoDetect() {
+    for (const [key, kws] of Object.entries(PATTERNS)) {
+        colMap[key] = headers.find(h => kws.includes(norm(h))) || '';
+    }
+}
+
+// ═══════════════════════════════════════════════════════
+//  MAPPING MODAL
+// ═══════════════════════════════════════════════════════
+const FIELD_META = [
+    { key:'deadline',   label:'Deadline / Due Date',    hint:'The date column for filtering',  required:true },
+    { key:'caseId',     label:'Case ID / Case No',       hint:'Unique identifier',              required:false },
+    { key:'caseName',   label:'Case Name / Title',       hint:'Short description of the case',  required:false },
+    { key:'status',     label:'Status',                  hint:'e.g. Pending, Completed',        required:false },
+    { key:'priority',   label:'Priority',                hint:'e.g. High / Medium / Low',       required:false },
+    { key:'assignedTo', label:'Assigned To',             hint:'Responsible person / team',      required:false },
+    { key:'remarks',    label:'Remarks / Notes',         hint:'Additional details',             required:false },
+];
+
+function showModal() {
+    const opts = ['<option value="">(Not mapped)</option>',
+        ...headers.map(h => `<option value="${esc(h)}">${esc(h)}</option>`)
+    ].join('');
+
+    document.getElementById('mapGrid').innerHTML = FIELD_META.map(f => `
+        <div class="map-row ${f.required ? 'required' : ''}">
+            <div>
+                <div class="map-label">${esc(f.label)}${f.required ? '<span class="req">*</span>' : ''}</div>
+                <div class="map-hint">${f.hint}</div>
+            </div>
+            <select class="map-select" id="mp_${f.key}">${opts}</select>
+        </div>
+    `).join('');
+
+    // Pre-fill auto-detected values
+    for (const [k,v] of Object.entries(colMap)) {
+        const el = document.getElementById('mp_' + k);
+        if (el && v) el.value = v;
+    }
+    document.getElementById('mappingModal').classList.remove('hidden');
+}
+
+function closeMappingModal() {
+    document.getElementById('mappingModal').classList.add('hidden');
+}
+
+function applyMapping() {
+    for (const f of FIELD_META) {
+        const el = document.getElementById('mp_' + f.key);
+        colMap[f.key] = el ? el.value : '';
+    }
+    if (!colMap.deadline) {
+        alert('Please select the Deadline/Due Date column — it is required to render the calendar.');
+        return;
+    }
+    closeMappingModal();
+    initCalendar();
+}
+
+// ═══════════════════════════════════════════════════════
+//  INIT CALENDAR
+// ═══════════════════════════════════════════════════════
+function initCalendar() {
+    // Show file chip in header
+    const chip = document.getElementById('fileChip');
+    chip.textContent = `📄 ${uploadedName}  (${rawData.length} rows)`;
+    chip.classList.remove('hidden');
+
+    // Hide upload, show calendar
+    document.getElementById('uploadSection').classList.add('hidden');
+    document.getElementById('calendarContainer').classList.remove('hidden');
+
+    populateFilters();
+
+    // Navigate to earliest future month, or today
+    const today = new Date(); today.setHours(0,0,0,0);
+    const futureDates = rawData
+        .map(r => parseDate(r[colMap.deadline]))
+        .filter(d => d && d >= today);
+
+    if (futureDates.length === 0) {
+        // All past — go to latest date
+        const allDates = rawData.map(r => parseDate(r[colMap.deadline])).filter(Boolean);
+        if (allDates.length > 0) {
+            const latest = allDates.reduce((a,b) => a > b ? a : b);
+            curYear  = latest.getFullYear();
+            curMonth = latest.getMonth();
+        }
+    }
+
+    renderCalendar();
+}
+
+function populateFilters() {
+    const setOpts = (elId, colKey, label) => {
+        if (!colKey) return;
+        const vals = [...new Set(rawData.map(r => r[colKey]).filter(Boolean))].sort();
+        const el   = document.getElementById(elId);
+        el.innerHTML = `<option value="">All ${label}</option>` +
+            vals.map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
+    };
+    setOpts('filterStatus',   colMap.status,   'Statuses');
+    setOpts('filterPriority', colMap.priority, 'Priorities');
+}
+
+// ═══════════════════════════════════════════════════════
+//  RENDER CALENDAR
+// ═══════════════════════════════════════════════════════
+function renderCalendar() {
+    updateHeader();
+    renderStats();
+    renderDays();
+}
+
+function updateHeader() {
+    document.getElementById('monthTitle').textContent = `${MONTH_NAMES[curMonth]} ${curYear}`;
+    const n = new Date(curYear, curMonth + 1, 0).getDate();
+    document.getElementById('monthSub').textContent   = `${n} days`;
+}
+
+// ── filtered data ──
+function filteredData() {
+    const q   = document.getElementById('searchInput').value.trim().toLowerCase();
+    const st  = document.getElementById('filterStatus').value;
+    const pri = document.getElementById('filterPriority').value;
+    return rawData.filter(r => {
+        if (st  && colMap.status   && r[colMap.status]   !== st)  return false;
+        if (pri && colMap.priority && r[colMap.priority] !== pri) return false;
+        if (q) {
+            const fields = [colMap.caseId, colMap.caseName, colMap.status,
+                            colMap.assignedTo, colMap.remarks, colMap.priority]
+                .filter(Boolean)
+                .map(c => String(r[c] || '').toLowerCase());
+            if (!fields.some(f => f.includes(q))) return false;
+        }
+        return true;
+    });
+}
+
+function dateKey(d) {
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function casesForDate(dk) {
+    return filteredData().filter(r => {
+        const d = parseDate(r[colMap.deadline]);
+        return d && dateKey(d) === dk;
+    });
+}
+
+// ── stats ──
+function renderStats() {
+    const today  = new Date(); today.setHours(0,0,0,0);
+    const todayK = dateKey(today);
+    const ms = new Date(curYear, curMonth, 1);
+    const me = new Date(curYear, curMonth + 1, 0);
+    me.setHours(23,59,59,999);
+
+    const fd = filteredData();
+
+    const monthTotal = fd.filter(r => { const d=parseDate(r[colMap.deadline]); return d && d>=ms && d<=me; }).length;
+    const overdue    = fd.filter(r => { const d=parseDate(r[colMap.deadline]); return d && d<today && !isCompleted(r); }).length;
+    const todayN     = fd.filter(r => { const d=parseDate(r[colMap.deadline]); return d && dateKey(d)===todayK; }).length;
+    const soon7end   = new Date(today); soon7end.setDate(soon7end.getDate()+7);
+    const soon7      = fd.filter(r => { const d=parseDate(r[colMap.deadline]); return d && d>today && d<=soon7end; }).length;
+    const done       = fd.filter(r => isCompleted(r)).length;
+
+    document.getElementById('statsBar').innerHTML = `
+        <div class="stat-card c-total">
+            <div class="stat-value">${monthTotal}</div><div class="stat-label">This Month</div>
+        </div>
+        <div class="stat-card c-overdue">
+            <div class="stat-value">${overdue}</div><div class="stat-label">Overdue</div>
+        </div>
+        <div class="stat-card c-today">
+            <div class="stat-value">${todayN}</div><div class="stat-label">Due Today</div>
+        </div>
+        <div class="stat-card c-soon">
+            <div class="stat-value">${soon7}</div><div class="stat-label">Next 7 Days</div>
+        </div>
+        <div class="stat-card c-done">
+            <div class="stat-value">${done}</div><div class="stat-label">Completed</div>
+        </div>
+    `;
+}
+
+// ── day rows ──
+function renderDays() {
+    const today   = new Date(); today.setHours(0,0,0,0);
+    const todayK  = dateKey(today);
+    const days    = new Date(curYear, curMonth + 1, 0).getDate();
+    const container = document.getElementById('calendarDays');
+
+    let html = '';
+
+    for (let d = 1; d <= days; d++) {
+        const dt      = new Date(curYear, curMonth, d);
+        const dk      = dateKey(dt);
+        const cases   = casesForDate(dk);
+        const dow     = dt.getDay();
+        const isToday = dk === todayK;
+        const isWE    = dow === 0 || dow === 6;
+        const overdue = dt < today && cases.some(r => !isCompleted(r));
+        const hasCases= cases.length > 0;
+        const isOpen  = expanded.has(dk);
+
+        // Row type
+        let type = 'type-empty';
+        if (overdue)  type = 'type-overdue';
+        else if (isToday && hasCases) type = 'type-today';
+        else if (isToday) type = 'type-today';
+        else if (hasCases) type = 'type-cases';
+        else if (isWE)  type = 'type-weekend-empty';
+
+        const rowClasses = ['day-row', type, hasCases ? 'has-cases' : '', isOpen ? 'expanded' : ''].filter(Boolean).join(' ');
+
+        // Circle
+        const circleClass = (isToday || overdue) ? '' : 'default';
+
+        // Badges
+        let badges = '';
+        if (hasCases) {
+            badges += `<span class="badge badge-blue">${cases.length} case${cases.length!==1?'s':''}</span>`;
+            if (overdue) badges += `<span class="badge badge-red">Overdue</span>`;
+
+            if (colMap.priority) {
+                let hi=0, me=0, lo=0;
+                cases.forEach(c => {
+                    const p = String(c[colMap.priority]||'').toLowerCase();
+                    if (p.includes('high')||p.includes('urgent')||p==='h') hi++;
+                    else if (p.includes('med')||p==='m') me++;
+                    else if (p.includes('low')||p==='l') lo++;
+                });
+                if (hi) badges += `<span class="badge badge-red">${hi} High</span>`;
+                if (me) badges += `<span class="badge badge-orange">${me} Med</span>`;
+                if (lo) badges += `<span class="badge badge-green">${lo} Low</span>`;
+            }
+        }
+
+        html += `
+        <div class="${rowClasses}" id="dr-${dk}">
+            <div class="day-header" ${hasCases ? `onclick="toggleDay('${dk}')"` : ''}>
+                <div class="day-circle ${circleClass}">${d}</div>
+                <div class="day-meta">
+                    <div class="day-name">
+                        ${DAY_NAMES[dow]}
+                        ${isToday ? '<span class="today-tag">Today</span>' : ''}
+                        ${isWE && !isToday ? '<span class="weekend-tag">Weekend</span>' : ''}
+                    </div>
+                    <div class="day-date-text">${MONTH_NAMES[curMonth]} ${d}, ${curYear}</div>
+                </div>
+                <div class="day-badges">${badges}</div>
+                ${hasCases ? '<div class="expand-chevron">▼</div>' : ''}
+            </div>
+            ${hasCases ? `<div class="day-content"><div class="table-wrap">${buildTable(cases)}</div></div>` : ''}
+        </div>`;
+    }
+
+    container.innerHTML = html;
+}
+
+function buildTable(cases) {
+    // Decide columns to show
+    const cols = [];
+    if (colMap.caseId)     cols.push({ col: colMap.caseId,     label: 'Case ID' });
+    if (colMap.caseName)   cols.push({ col: colMap.caseName,   label: 'Case Name / Title' });
+    if (colMap.status)     cols.push({ col: colMap.status,     label: 'Status' });
+    if (colMap.priority)   cols.push({ col: colMap.priority,   label: 'Priority' });
+    if (colMap.assignedTo) cols.push({ col: colMap.assignedTo, label: 'Assigned To' });
+    if (colMap.remarks)    cols.push({ col: colMap.remarks,    label: 'Remarks' });
+
+    // If nothing mapped except deadline, show all other columns
+    if (cols.length === 0) {
+        headers.filter(h => h !== colMap.deadline).forEach(h => cols.push({ col: h, label: h }));
+    }
+
+    if (cols.length === 0) return '<div class="no-data-row">No additional columns to display.</div>';
+
+    const thead = `<tr><th>#</th>${cols.map(c => `<th>${esc(c.label)}</th>`).join('')}</tr>`;
+    const tbody = cases.map((r, i) => {
+        const cells = cols.map(c => {
+            const raw = String(r[c.col] || '');
+            if (c.col === colMap.status)   return `<td>${renderStatus(raw)}</td>`;
+            if (c.col === colMap.priority) return `<td>${renderPriority(raw)}</td>`;
+            return `<td><span class="cell-truncate" title="${esc(raw)}">${esc(raw) || '<span style="color:var(--text-muted)">—</span>'}</span></td>`;
+        }).join('');
+        return `<tr><td class="row-num">${i+1}</td>${cells}</tr>`;
+    }).join('');
+
+    return `<table class="cases-table"><thead>${thead}</thead><tbody>${tbody}</tbody></table>`;
+}
+
+function renderStatus(v) {
+    if (!v) return '<span style="color:var(--text-muted)">—</span>';
+    const lv = v.toLowerCase();
+    let cls = 's-default';
+    if (lv.includes('pend')||lv.includes('open'))                        cls='s-pending';
+    else if (lv.includes('active')||lv.includes('progress')||lv.includes('ongoing')) cls='s-active';
+    else if (lv.includes('complet')||lv.includes('done')||lv.includes('closed')||lv.includes('resolved')) cls='s-completed';
+    else if (lv.includes('overdue')||lv.includes('delay')||lv.includes('late'))      cls='s-overdue';
+    return `<span class="status-pill ${cls}">${esc(v)}</span>`;
+}
+
+function renderPriority(v) {
+    if (!v) return '<span style="color:var(--text-muted)">—</span>';
+    const lv = v.toLowerCase();
+    let cls = '';
+    if (lv.includes('high')||lv.includes('urgent')||lv.includes('critical')||lv==='h') cls='p-high';
+    else if (lv.includes('med')||lv==='m')                                              cls='p-medium';
+    else if (lv.includes('low')||lv==='l')                                              cls='p-low';
+    return `<span class="priority-badge ${cls}"><span class="p-dot"></span>${esc(v)}</span>`;
+}
+
+function isCompleted(row) {
+    if (!colMap.status) return false;
+    const v = String(row[colMap.status]||'').toLowerCase();
+    return v.includes('complet')||v.includes('done')||v.includes('closed')||v.includes('resolved');
+}
+
+// ═══════════════════════════════════════════════════════
+//  TOGGLE DAY EXPAND / COLLAPSE
+// ═══════════════════════════════════════════════════════
+function toggleDay(dk) {
+    const el = document.getElementById('dr-' + dk);
+    if (!el || !el.querySelector('.day-content')) return;
+    el.classList.toggle('expanded');
+    if (el.classList.contains('expanded')) expanded.add(dk);
+    else                                   expanded.delete(dk);
+}
+
+// ═══════════════════════════════════════════════════════
+//  NAVIGATION
+// ═══════════════════════════════════════════════════════
+function changeMonth(delta) {
+    curMonth += delta;
+    if (curMonth < 0)  { curMonth = 11; curYear--; }
+    if (curMonth > 11) { curMonth =  0; curYear++; }
+    renderCalendar();
+}
+
+function goToToday() {
+    const t = new Date();
+    curYear  = t.getFullYear();
+    curMonth = t.getMonth();
+    renderCalendar();
+    setTimeout(() => {
+        const el = document.getElementById('dr-' + dateKey(t));
+        if (el) el.scrollIntoView({ behavior:'smooth', block:'center' });
+    }, 80);
+}
+
+// ═══════════════════════════════════════════════════════
+//  DATE PARSING  (handles ISO, DD/MM/YYYY, Excel serials, etc.)
+// ═══════════════════════════════════════════════════════
+function parseDate(val) {
+    if (!val) return null;
+    if (val instanceof Date) {
+        if (isNaN(val)) return null;
+        return new Date(val.getFullYear(), val.getMonth(), val.getDate());
+    }
+    const s = String(val).trim();
+    if (!s) return null;
+
+    // YYYY-MM-DD or ISO
+    let d = new Date(s);
+    if (!isNaN(d)) return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+
+    // DD/MM/YYYY  or  DD-MM-YYYY
+    const dmySlash = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+    if (dmySlash) {
+        d = new Date(`${dmySlash[3]}-${dmySlash[2].padStart(2,'0')}-${dmySlash[1].padStart(2,'0')}`);
+        if (!isNaN(d)) return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    }
+
+    // MM/DD/YYYY (already handled above via new Date(s) in most engines — kept for safety)
+    const mdySlash = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+    if (mdySlash) {
+        const y = mdySlash[3].length === 2 ? '20' + mdySlash[3] : mdySlash[3];
+        d = new Date(`${y}-${mdySlash[1].padStart(2,'0')}-${mdySlash[2].padStart(2,'0')}`);
+        if (!isNaN(d)) return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    }
+
+    // Excel serial number (OLE Automation date)
+    if (/^\d+(\.\d+)?$/.test(s)) {
+        const serial = parseFloat(s);
+        if (serial > 1000 && serial < 200000) {
+            const epoch = new Date(Math.round((serial - 25569) * 86400 * 1000));
+            if (!isNaN(epoch)) return new Date(epoch.getFullYear(), epoch.getMonth(), epoch.getDate());
+        }
+    }
+
+    return null;
+}
+
+// ═══════════════════════════════════════════════════════
+//  XSS-SAFE HTML ESCAPE
+// ═══════════════════════════════════════════════════════
+function esc(s) {
+    return String(s)
+        .replace(/&/g,'&amp;')
+        .replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;')
+        .replace(/"/g,'&quot;')
+        .replace(/'/g,'&#039;');
+}
+</script>
+</body>
+</html>
