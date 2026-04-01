@@ -184,12 +184,11 @@ tbody tr:hover td{background:var(--gray-lt)}
   <div class="ov-stats" id="ovStats"></div>
 
   <div class="toolbar">
-    <input type="text" class="tb-in" id="srch" placeholder="&#128269;  Search FIR No, Police Station, IO Name, Act&hellip;" oninput="render()">
     <select class="tb-sel" id="psF" onchange="render()">
       <option value="">All Police Stations (11)</option>
     </select>
     <select class="tb-sel" id="catF" onchange="render()">
-      <option value="">All Compliance Categories</option>
+      <option value="">All Categories</option>
       <option value="compliant">&#10003; In Time (IIF5 within 60 days)</option>
       <option value="late">&#8987; Late Filing (IIF5 &gt; 60 days)</option>
       <option value="overdue">&#10007; Overdue (IIF5 not filed)</option>
@@ -256,7 +255,7 @@ function qf(i){
 }
 
 function gf(){
-  const q=document.getElementById('srch').value.trim().toLowerCase();
+  const q='';
   const ps=document.getElementById('psF').value;
   const cat=document.getElementById('catF').value;
   return DATA.filter(r=>{
