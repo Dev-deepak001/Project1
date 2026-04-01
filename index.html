@@ -33,7 +33,16 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 
 /* OVERALL STATS */
 .ov-stats{display:grid;grid-template-columns:repeat(5,1fr);gap:.75rem;margin-bottom:1.25rem}
-@media(max-width:760px){.ov-stats{display:none}.legend{display:none}}
+@media(max-width:760px){
+  .ov-stats{display:none}
+  .legend{display:none}
+  .hdr{height:auto;padding:.75rem 1rem;flex-direction:column;align-items:flex-start;gap:.25rem}
+  .hdr-meta{display:none}
+  .hdr-ico{font-size:1.5rem}
+  .hdr-title h1{font-size:.95rem}
+  .hdr-title p{font-size:.68rem}
+  .hdr-brand{gap:.5rem}
+}
 .ov-card{background:var(--surface);border:1px solid var(--border);border-radius:.875rem;padding:1.1rem 1rem 1rem;box-shadow:var(--sh1);position:relative;overflow:hidden;cursor:pointer;transition:box-shadow .18s,transform .18s}
 .ov-card:hover{box-shadow:var(--sh2);transform:translateY(-1px)}
 .ov-card.af{outline:3px solid var(--primary);outline-offset:1px}
@@ -75,6 +84,13 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 .ms-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
 .ms-body .msval{font-weight:800;font-size:1.1rem}
 .ms-body .mslbl{font-size:.67rem;color:var(--text3);text-transform:uppercase;letter-spacing:.06em}
+@media(max-width:600px){
+  .mstats{grid-template-columns:repeat(4,1fr);gap:.25rem}
+  .mstat{padding:.4rem .3rem;gap:.3rem;border-radius:.5rem}
+  .ms-dot{width:7px;height:7px}
+  .ms-body .msval{font-size:.85rem}
+  .ms-body .mslbl{font-size:.55rem;letter-spacing:0}
+}
 
 /* LEGEND */
 .legend{display:flex;align-items:center;gap:1.125rem;flex-wrap:wrap;background:var(--surface);border:1px solid var(--border);border-radius:.75rem;padding:.6rem 1.25rem;margin-bottom:.875rem;font-size:.75rem;box-shadow:var(--sh1)}
@@ -174,7 +190,7 @@ tbody tr:hover td{background:var(--gray-lt)}
     </select>
     <select class="tb-sel" id="catF" onchange="render()">
       <option value="">All Compliance Categories</option>
-      <option value="compliant">&#10003; Compliant (IIF5 within 60 days)</option>
+      <option value="compliant">&#10003; In Time (IIF5 within 60 days)</option>
       <option value="late">&#8987; Late Filing (IIF5 &gt; 60 days)</option>
       <option value="overdue">&#10007; Overdue (IIF5 not filed)</option>
       <option value="pending">&#9679; Pending (still within 60-day window)</option>
@@ -219,7 +235,7 @@ function buildOverallStats(){
   const pct=n=>((n/tot)*100).toFixed(1)+'%';
   const cards=[
     {c:'c-all', v:tot,  l:'Total FIRs',       p:''},
-    {c:'c-comp',v:comp, l:'Compliant &#10003;',p:pct(comp)},
+    {c:'c-comp',v:comp, l:'In Time &#10003;',p:pct(comp)},
     {c:'c-late',v:late, l:'Late Filing &#8987;',p:pct(late)},
     {c:'c-over',v:over, l:'Overdue &#10007;',  p:pct(over)},
     {c:'c-pend',v:pend, l:'Pending &#9679;',   p:pct(pend)},
@@ -270,7 +286,7 @@ function render(){
   const mo=fd.filter(r=>im(r)&&r.category==='overdue').length;
   const mp=fd.filter(r=>im(r)&&r.category==='pending').length;
   document.getElementById('mStats').innerHTML=`
-    <div class="mstat"><span class="ms-dot" style="background:var(--green)"></span><div class="ms-body"><div class="msval" style="color:var(--green)">${mc}</div><div class="mslbl">Compliant</div></div></div>
+    <div class="mstat"><span class="ms-dot" style="background:var(--green)"></span><div class="ms-body"><div class="msval" style="color:var(--green)">${mc}</div><div class="mslbl">In Time</div></div></div>
     <div class="mstat"><span class="ms-dot" style="background:var(--orange)"></span><div class="ms-body"><div class="msval" style="color:var(--orange)">${ml}</div><div class="mslbl">Late Filing</div></div></div>
     <div class="mstat"><span class="ms-dot" style="background:var(--red)"></span><div class="ms-body"><div class="msval" style="color:var(--red)">${mo}</div><div class="mslbl">Overdue</div></div></div>
     <div class="mstat"><span class="ms-dot" style="background:var(--blue)"></span><div class="ms-body"><div class="msval" style="color:var(--blue)">${mp}</div><div class="mslbl">Pending</div></div></div>`;
@@ -335,7 +351,7 @@ function bldTable(cases){
   </tr>`;
   const rows=cases.map((r,i)=>{
     const pill={
-      compliant:`<span class="pill p-comp"><span class="dot d-g"></span>Compliant</span>`,
+      compliant:`<span class="pill p-comp"><span class="dot d-g"></span>In Time</span>`,
       late:     `<span class="pill p-late"><span class="dot d-o"></span>Late Filing</span>`,
       overdue:  `<span class="pill p-over"><span class="dot d-r"></span>Overdue</span>`,
       pending:  `<span class="pill p-pend"><span class="dot d-b"></span>Pending</span>`,
