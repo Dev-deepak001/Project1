@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(start d:/GitHub/Project1/index.html)"
+      "Bash(start d:/GitHub/Project1/index.html)",
+      "Bash(python -c ':*)",
+      "Bash(python build.py)"
     ]
   }
 }
