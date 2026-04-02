@@ -108,7 +108,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 .t-pend  {border-left-color:var(--blue)}
 .t-mixed {border-left-color:var(--purple)}
 .empty   {opacity:.62}
-.today-r {background:#fffdf5!important}
+.today-r {background:linear-gradient(135deg,#fffbea 0%,#fff8e1 100%)!important;border-color:#fcd34d!important;border-left-color:#f59e0b!important;box-shadow:0 2px 12px rgba(245,158,11,.13)!important}
 
 .day-hdr{display:flex;align-items:center;padding:.75rem 1.25rem;gap:.875rem;user-select:none}
 .has-cases .day-hdr{cursor:pointer}
@@ -359,9 +359,9 @@ function bldTable(cases){
       <td><span class="fno">${e(r.fir_no)}</span></td>
       <td><span class="ps-tag">${e(r.ps_name)}</span></td>
       <td>${pill}</td>
-      <td class="rn">${e(r.fir_date)}</td>
-      <td><strong>${e(r.deadline)}</strong></td>
-      <td class="rn">${r.iif5_date?e(r.iif5_date):'<span class="muted">Not filed</span>'}</td>
+      <td class="rn">${e(fd(r.fir_date))}</td>
+      <td><strong>${e(fd(r.deadline))}</strong></td>
+      <td class="rn">${r.iif5_date?e(fd(r.iif5_date)):'<span class="muted">Not filed</span>'}</td>
     </tr>`;
   }).join('');
   return `<table><thead>${h}</thead><tbody>${rows}</tbody></table>`;
@@ -376,6 +376,7 @@ function tog(dateK){
 function chM(d){cM+=d;if(cM<0){cM=11;cY--;}if(cM>11){cM=0;cY++;}render();window.scrollTo({top:0,behavior:'smooth'});}
 function goToday(){const t=new Date();cY=t.getFullYear();cM=t.getMonth();render();setTimeout(()=>{const el=document.getElementById('dr-'+dk(t));if(el)el.scrollIntoView({behavior:'smooth',block:'center'});},80);}
 function e(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function fd(s){if(!s)return '';const p=String(s).split('-');return p.length===3?p[2]+'-'+p[1]+'-'+p[0]:s;}
 </script>
 </body>
 </html>
