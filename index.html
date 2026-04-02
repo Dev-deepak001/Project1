@@ -27,6 +27,8 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 .hdr-title h1{font-size:1.125rem;font-weight:800;letter-spacing:-.2px;line-height:1.25}
 .hdr-title p{font-size:.7rem;opacity:.75;margin-top:.15rem}
 .hdr-meta{font-size:.72rem;opacity:.7;text-align:right;line-height:1.7}
+.filter-btn{display:none;align-items:center;gap:.35rem;padding:.45rem .8rem;background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.35);border-radius:.5rem;color:#fff;font-size:.78rem;font-weight:700;cursor:pointer;transition:background .18s,border-color .18s;white-space:nowrap;flex-shrink:0}
+.filter-btn.active{background:rgba(255,255,255,.28);border-color:rgba(255,255,255,.7)}
 
 /* WRAP */
 .wrap{max-width:1200px;margin:1.5rem auto;padding:0 1.25rem 4rem}
@@ -36,12 +38,15 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 @media(max-width:760px){
   .ov-stats{display:none}
   .legend{display:none}
-  .hdr{height:auto;padding:.75rem 1rem;flex-direction:column;align-items:flex-start;gap:.25rem}
+  .hdr{height:auto;padding:.75rem 1rem;flex-direction:row;align-items:center;justify-content:space-between;gap:.5rem}
   .hdr-meta{display:none}
   .hdr-ico{font-size:1.5rem}
   .hdr-title h1{font-size:.95rem}
   .hdr-title p{font-size:.68rem}
   .hdr-brand{gap:.5rem}
+  .filter-btn{display:flex}
+  .toolbar{display:none!important}
+  .toolbar.open{display:flex!important}
 }
 .ov-card{background:var(--surface);border:1px solid var(--border);border-radius:.875rem;padding:1.1rem 1rem 1rem;box-shadow:var(--sh1);position:relative;overflow:hidden;cursor:pointer;transition:box-shadow .18s,transform .18s}
 .ov-card:hover{box-shadow:var(--sh2);transform:translateY(-1px)}
@@ -178,12 +183,13 @@ tbody tr:hover td{background:var(--gray-lt)}
     </div>
   </div>
   <div class="hdr-meta">Data: 01 Jul 2024 &ndash; 01 Apr 2026<br>Total FIRs: 1,588</div>
+  <button class="filter-btn" id="filterBtn" onclick="toggleFilters()">&#9927; Filters</button>
 </header>
 
 <div class="wrap">
   <div class="ov-stats" id="ovStats"></div>
 
-  <div class="toolbar">
+  <div class="toolbar" id="toolbar">
     <select class="tb-sel" id="psF" onchange="render()">
       <option value="">All Police Stations (11)</option>
     </select>
@@ -374,6 +380,7 @@ function tog(dateK){
   EX.has(dateK)?EX.delete(dateK):EX.add(dateK);
 }
 function chM(d){cM+=d;if(cM<0){cM=11;cY--;}if(cM>11){cM=0;cY++;}render();window.scrollTo({top:0,behavior:'smooth'});}
+function toggleFilters(){const tb=document.getElementById('toolbar');const btn=document.getElementById('filterBtn');tb.classList.toggle('open');btn.classList.toggle('active');}
 function goToday(){const t=new Date();cY=t.getFullYear();cM=t.getMonth();render();setTimeout(()=>{const el=document.getElementById('dr-'+dk(t));if(el)el.scrollIntoView({behavior:'smooth',block:'center'});},80);}
 function e(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function fd(s){if(!s)return '';const p=String(s).split('-');return p.length===3?p[2]+'-'+p[1]+'-'+p[0]:s;}
